@@ -7,7 +7,7 @@
 
 ![设置窗口布局示意（演示数据）/ settings layout illustration (demo data)](docs/images/settings-preview.svg)
 
-<!-- VERSION: 0.1.3 -->
+<!-- VERSION: 0.1.4 -->
 
 ## 中文
 
