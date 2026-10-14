@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-test-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v4
+
+      - name: Install .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore and verify formatting
+        shell: pwsh
+        run: |
+          dotnet restore .\MicuQuotaWidget.sln
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet format .\MicuQuotaWidget.sln --verify-no-changes --no-restore
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Validate PowerShell automation syntax
+        shell: powershell
+        run: |
+          Get-ChildItem -LiteralPath .\scripts -Filter '*.ps1' | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors)
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error "$($_.Extent.StartLineNumber): $($_.Message)" }
+              throw "PowerShell parser rejected $($_.FullName)"
+            }
+          }
+
+      - name: Build and run tests
+        shell: pwsh
+        run: |
+          dotnet build .\MicuQuotaWidget.sln --configuration Release --no-restore
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet test .\tests\MicuQuotaWidget.Core.Tests\MicuQuotaWidget.Core.Tests.csproj --configuration Release --no-restore
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet test .\tests\MicuQuotaWidget.UiTests\MicuQuotaWidget.UiTests.csproj --configuration Release --no-restore
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Publish Windows archive and hash manifest
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $version = $tag.Substring(1)
+          $publishDirectory = Join-Path $PWD "artifacts\release\$tag\publish"
+          $assetDirectory = Join-Path $PWD "artifacts\release\$tag\assets"
+          $zipName = "MicuQuotaWidget-v$version-windows-x64.zip"
+          $zipPath = Join-Path $assetDirectory $zipName
+          New-Item -ItemType Directory -Path $assetDirectory -Force | Out-Null
+          dotnet publish .\src\MicuQuotaWidget\MicuQuotaWidget.csproj --configuration Release --runtime win-x64 --self-contained false --output $publishDirectory --no-restore
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Compress-Archive -Path (Join-Path $publishDirectory '*') -DestinationPath $zipPath -Force
+          $hash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash *$zipName" | Set-Content -LiteralPath (Join-Path $assetDirectory 'SHA256SUMS.txt') -Encoding utf8
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $version = $tag.Substring(1)
+          $assetDirectory = Join-Path $PWD "artifacts\release\$tag\assets"
+          gh release create $tag `
+            (Join-Path $assetDirectory "MicuQuotaWidget-v$version-windows-x64.zip") `
+            (Join-Path $assetDirectory 'SHA256SUMS.txt') `
+            --title "MicuQuotaWidget v$version" `
+            --notes-file (Join-Path $PWD "docs\releases\v$version.md")
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

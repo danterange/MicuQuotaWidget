@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="652" height="404" viewBox="0 0 652 404" role="img" aria-labelledby="title desc">
+  <title id="title">MicuQuotaWidget 演示界面</title>
+  <desc id="desc">浅色紧凑桌面组件，展示模拟的 Micu 余额、刷新时间与置顶控制。</desc>
+  <rect width="652" height="404" rx="28" fill="#e2e8f0"/>
+  <rect x="40" y="40" width="572" height="324" rx="18" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="40" y="40" width="572" height="68" rx="18" fill="#ecfdf5"/>
+  <path d="M40 90h572v18H40z" fill="#ecfdf5"/>
+  <text x="72" y="83" fill="#0f172a" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700">Micu 余额</text>
+  <rect x="458" y="58" width="92" height="34" rx="9" fill="#d1fae5"/>
+  <text x="479" y="81" fill="#065f46" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="600">已置顶</text>
+  <text x="72" y="151" fill="#64748b" font-family="Segoe UI, Arial, sans-serif" font-size="18">当前可用余额</text>
+  <text x="72" y="223" fill="#0f172a" font-family="Cascadia Mono, Consolas, monospace" font-size="56" font-weight="700">$ 12.34</text>
+  <circle cx="79" cy="267" r="7" fill="#059669"/>
+  <text x="96" y="274" fill="#334155" font-family="Segoe UI, Arial, sans-serif" font-size="17">查询成功 · 刚刚更新</text>
+  <line x1="72" y1="299" x2="580" y2="299" stroke="#dbeafe" stroke-width="2"/>
+  <text x="72" y="334" fill="#64748b" font-family="Segoe UI, Arial, sans-serif" font-size="15">演示数据，仅用于 README 说明</text>
+  <text x="487" y="334" fill="#047857" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600">刷新</text>
+</svg>

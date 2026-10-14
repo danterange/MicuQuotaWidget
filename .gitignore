@@ -1,0 +1,19 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+artifacts/
+
+# Local IDE state
+.vs/
+*.user
+*.suo
+*.userosscache
+
+# Local secrets and diagnostics
+.env
+*.local.json
+*.secrets.json
+*.log
+
+# Generated publish output
+publish/
