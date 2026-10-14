@@ -26,6 +26,18 @@ foreach ($marker in @('Assert-NoSensitiveStagedContent', 'Assert-PublicGitHistor
     }
 }
 
+if ($deliveryContent.IndexOf('$parsedReleaseList = $releaseListJson | ConvertFrom-Json', [System.StringComparison]::Ordinal) -lt 0 -or
+    $deliveryContent.IndexOf('if ([bool]$parsedReleaseList)', [System.StringComparison]::Ordinal) -lt 0) {
+    throw 'Release delivery script does not safely handle an empty GitHub Release list.'
+}
+
+# Windows PowerShell represents an empty JSON array as an empty object array.
+$emptyReleaseList = '[]' | ConvertFrom-Json
+
+if (@($emptyReleaseList).Count -ne 0) {
+    throw 'Release preflight must treat an empty GitHub Release list as empty.'
+}
+
 foreach ($ignoreRule in @('.env.*', 'local.settings.json', 'secrets.json', 'credentials.json', '*.pfx', '*.p12', '*.pem', '*.key', '*.snk')) {
     if ($ignoreContent.IndexOf($ignoreRule, [System.StringComparison]::Ordinal) -lt 0) {
         throw "Git ignore rules are missing the required secret safeguard: $ignoreRule"

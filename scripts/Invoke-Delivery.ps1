@@ -475,7 +475,14 @@ function Assert-ReleasePreflight {
         throw "Unable to list GitHub Releases: exit code $LASTEXITCODE"
     }
 
-    $existingReleases = @($releaseListJson | ConvertFrom-Json)
+    # ConvertFrom-Json emits an empty Object[] for an empty JSON array in Windows PowerShell.
+    # Normalize false-like empty values to an actual empty collection before strict-mode access.
+    $parsedReleaseList = $releaseListJson | ConvertFrom-Json
+    $existingReleases = @()
+
+    if ([bool]$parsedReleaseList) {
+        $existingReleases = @($parsedReleaseList)
+    }
 
     if (@($existingReleases | Where-Object { $_.tagName -eq $tagName }).Count -gt 0) {
         throw "GitHub Release already exists: $tagName"
