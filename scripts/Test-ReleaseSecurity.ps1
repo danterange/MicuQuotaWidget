@@ -35,11 +35,22 @@ if ($deliveryContent.IndexOf('$parsedReleaseList = $releaseListJson | ConvertFro
     throw 'Release delivery script does not safely handle an empty GitHub Release list.'
 }
 
+if ($deliveryContent.IndexOf('$parsedRuns = $runsJson | ConvertFrom-Json', [System.StringComparison]::Ordinal) -lt 0 -or
+    $deliveryContent.IndexOf('if ([bool]$parsedRuns)', [System.StringComparison]::Ordinal) -lt 0) {
+    throw 'Release delivery script does not safely handle a delayed GitHub workflow listing.'
+}
+
 # Windows PowerShell represents an empty JSON array as an empty object array.
 $emptyReleaseList = '[]' | ConvertFrom-Json
 
 if (@($emptyReleaseList).Count -ne 0) {
     throw 'Release preflight must treat an empty GitHub Release list as empty.'
+}
+
+$emptyWorkflowList = '[]' | ConvertFrom-Json
+
+if (@($emptyWorkflowList).Count -ne 0) {
+    throw 'Release wait must treat a delayed GitHub workflow listing as empty.'
 }
 
 foreach ($ignoreRule in @('.env.*', 'local.settings.json', 'secrets.json', 'credentials.json', '*.pfx', '*.p12', '*.pem', '*.key', '*.snk')) {

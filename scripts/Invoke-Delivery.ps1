@@ -510,7 +510,15 @@ function Wait-ForReleaseWorkflow {
             throw "Unable to query GitHub Actions runs: exit code $LASTEXITCODE"
         }
 
-        $runs = @($runsJson | ConvertFrom-Json)
+        # GitHub can return an empty run list immediately after a tag push; normalize the
+        # Windows PowerShell empty Object[] before strict-mode property access.
+        $parsedRuns = $runsJson | ConvertFrom-Json
+        $runs = @()
+
+        if ([bool]$parsedRuns) {
+            $runs = @($parsedRuns)
+        }
+
         $run = $runs | Select-Object -First 1
 
         if ($null -ne $run) {
