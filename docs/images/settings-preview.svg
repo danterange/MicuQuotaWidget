@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="456" height="492" viewBox="0 0 456 492" role="img" aria-labelledby="title description">
+  <title id="title">MicuQuotaWidget 设置窗口演示</title>
+  <desc id="description">设置窗口布局示意：完整可见的查询方式、API Key 输入框、状态提示和保存操作；仅含演示数据。</desc>
+  <rect width="456" height="492" rx="14" fill="#f8fafc"/>
+  <rect x="1" y="1" width="454" height="490" rx="13" fill="none" stroke="#cfe9e0"/>
+  <rect x="1" y="1" width="454" height="42" rx="13" fill="#ecfdf5"/>
+  <path d="M1 42h454" stroke="#cfe9e0"/>
+  <text x="20" y="27" fill="#0f172a" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" font-weight="600">MicuQuotaWidget 设置</text>
+  <path d="M422 17l10 10m0-10l-10 10" stroke="#64748b" stroke-linecap="round" stroke-width="1.8"/>
+  <text x="28" y="82" fill="#0f172a" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="21" font-weight="700">Micu 查询设置</text>
+  <text x="28" y="106" fill="#64748b" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="12">API Key 仅保存到当前 Windows 用户的 Credential Manager，</text>
+  <text x="28" y="123" fill="#64748b" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="12">不会写入项目文件。</text>
+  <text x="28" y="160" fill="#0f172a" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" font-weight="600">查询方式</text>
+  <rect x="28" y="170" width="400" height="36" rx="2" fill="#ffffff" stroke="#94a3b8"/>
+  <text x="39" y="193" fill="#0f172a" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13">Micu API（推荐）</text>
+  <path d="M407 185l5 5 5-5" fill="none" stroke="#475569" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="28" y="226" fill="#64748b" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="12">仅连接所选 Micu 官方 HTTPS 主机，不支持自定义地址。</text>
+  <text x="28" y="268" fill="#0f172a" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" font-weight="600">API Key</text>
+  <rect x="28" y="278" width="400" height="36" rx="2" fill="#ffffff" stroke="#059669"/>
+  <path d="M40 286v20" stroke="#059669" stroke-width="1.4"/>
+  <text x="28" y="335" fill="#64748b" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="12">首次配置必须输入 Key；后续留空即可保留现有 Key。</text>
+  <text x="28" y="370" fill="#64748b" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="12">API Key 保存失败，且无法自动还原查询方式；请重新打开设置确认</text>
+  <text x="28" y="387" fill="#64748b" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="12">当前方式后重试。</text>
+  <path d="M1 420h454" stroke="#cfe9e0"/>
+  <rect x="264" y="438" width="66" height="34" rx="6" fill="#ffffff" stroke="#cfe9e0"/>
+  <text x="286" y="460" fill="#0f172a" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" font-weight="600">取消</text>
+  <rect x="338" y="438" width="90" height="34" rx="6" fill="#059669"/>
+  <text x="351" y="460" fill="#ffffff" font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="13" font-weight="600">保存并刷新</text>
+</svg>

@@ -65,6 +65,12 @@ jobs:
           dotnet test .\tests\MicuQuotaWidget.UiTests\MicuQuotaWidget.UiTests.csproj --configuration Release --no-restore
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Render and verify WPF UI screenshots
+        shell: powershell
+        run: |
+          & .\scripts\Test-Ui.ps1 -NoRestore
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Publish Windows archive and hash manifest
         shell: pwsh
         run: |

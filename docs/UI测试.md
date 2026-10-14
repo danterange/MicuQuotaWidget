@@ -2,14 +2,15 @@
 
 ## 自动验证
 
-`tests/MicuQuotaWidget.UiTests` 在 STA 线程创建真实 WPF `MainWindow`，检查：
+`tests/MicuQuotaWidget.UiTests` 在一个共享 STA Application 中创建真实 WPF 窗口，检查：
 
 - 初始尺寸保持紧凑；
 - `Topmost` 默认开启且可用键盘切换；
 - 刷新、设置和关闭控件拥有稳定 `AutomationProperties.Name`；
 - 主窗口不依赖真实 API Key 或网络即可初始化。
+- `SettingsWindow` 的查询方式、API Key、长校验提示、取消和保存按钮都具有非零可交互尺寸，且完整落在客户区内；这专门防止设置窗口底部被裁切。
 
-`scripts/Test-Ui.ps1` 运行该项目，并为需要人工核验的真实桌面环境留下明确入口。任何 UI 变化完成后都必须实际查看演示截图，检查标题栏、中文文字、聚焦环、加载/失败状态和窄窗口裁切。
+`scripts/Test-Ui.ps1` 会生成主小组件和设置窗口两张不含真实 Key 的演示截图；Release workflow 也运行该脚本。任何 UI 变化完成后都必须实际查看两张截图，检查标题栏、中文文字、聚焦环、加载/失败状态、设置表单和窄窗口裁切。
 
 ViewModel state test 还覆盖未配置、查询中、成功、超时、置顶切换，以及在途请求时关闭窗口的 cancellation 路径；这避免仅凭成功截图遗漏错误恢复行为。
 
@@ -20,3 +21,4 @@ ViewModel state test 还覆盖未配置、查询中、成功、超时、置顶�
 3. 设置有效演示响应后，余额和更新时间可读，数字使用等宽字体避免跳动。
 4. `Ctrl+R` 和 `Ctrl+T` 均可用；Tab 顺序与视觉顺序一致。
 5. 切换置顶后窗口不遮挡其自身按钮，且窗口拖动区域不吞掉按钮点击。
+6. 设置窗口在默认字号和最长校验提示下同时显示 API Key 输入框、取消和“保存并刷新”按钮；若屏幕可用高度不足，内容区可滚动且底部操作栏保持可见。

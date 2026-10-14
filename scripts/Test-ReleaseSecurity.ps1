@@ -74,4 +74,8 @@ if ($workflowContent.IndexOf('$env:RELEASE_TAG', [System.StringComparison]::Ordi
     throw 'Release workflow does not read the validated release tag from the environment.'
 }
 
+if ($workflowContent.IndexOf('.\scripts\Test-Ui.ps1 -NoRestore', [System.StringComparison]::Ordinal) -lt 0) {
+    throw 'Release workflow does not render and verify the required WPF UI screenshots.'
+}
+
 Write-Output '[OK] Release security contract checks completed.'

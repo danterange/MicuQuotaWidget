@@ -4,22 +4,20 @@
         xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore"
         Title="MicuQuotaWidget 设置"
         Width="432"
-        Height="344"
         MinWidth="400"
-        MinHeight="320"
-        ResizeMode="NoResize"
+        MaxWidth="560"
+        MinHeight="400"
+        MaxHeight="720"
+        SizeToContent="Height"
+        ResizeMode="CanResize"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource SurfaceBrush}">
-    <Grid Margin="28,24">
+    <Grid Margin="28,24" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="18" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="16" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -34,51 +32,67 @@
                        Text="API Key 仅保存到当前 Windows 用户的 Credential Manager，不会写入项目文件。" />
         </StackPanel>
 
-        <StackPanel Grid.Row="2">
-            <TextBlock FontWeight="SemiBold" Text="查询方式" />
-            <ComboBox x:Name="EndpointKindComboBox"
-                      Margin="0,6,0,0"
-                      Height="34"
-                      SelectedIndex="0"
-                      automation:AutomationProperties.Name="选择 Micu 查询方式">
-                <ComboBoxItem Tag="MicuApi" Content="Micu API（推荐）" />
-                <ComboBoxItem Tag="MicuSubscription" Content="Micu Subscription（旧订阅）" />
-            </ComboBox>
-            <TextBlock Margin="0,5,0,0"
-                       Foreground="{StaticResource MutedTextBrush}"
-                       FontSize="12"
-                       TextWrapping="Wrap"
-                       Text="程序只会连接所选 Micu 官方 HTTPS 主机，不支持自定义地址。" />
-        </StackPanel>
+        <ScrollViewer x:Name="SettingsScrollViewer"
+                      Grid.Row="2"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto"
+                      CanContentScroll="False"
+                      Focusable="False"
+                      automation:AutomationProperties.Name="Micu 设置内容">
+            <StackPanel>
+                <StackPanel>
+                    <TextBlock FontWeight="SemiBold" Text="查询方式" />
+                    <ComboBox x:Name="EndpointKindComboBox"
+                              Margin="0,6,0,0"
+                              Height="34"
+                              SelectedIndex="0"
+                              automation:AutomationProperties.Name="选择 Micu 查询方式">
+                        <ComboBoxItem Tag="MicuApi" Content="Micu API（推荐）" />
+                        <ComboBoxItem Tag="MicuSubscription" Content="Micu Subscription（旧订阅）" />
+                    </ComboBox>
+                    <TextBlock Margin="0,5,0,0"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Text="程序只会连接所选 Micu 官方 HTTPS 主机，不支持自定义地址。" />
+                </StackPanel>
 
-        <StackPanel Grid.Row="4">
-            <TextBlock FontWeight="SemiBold" Text="API Key" />
-            <PasswordBox x:Name="ApiKeyPasswordBox"
-                         Margin="0,6,0,0"
-                         Height="34"
-                         Padding="10,6"
-                         ToolTip="留空会保留现有 API Key"
-                         automation:AutomationProperties.Name="Micu API Key" />
-            <TextBlock Margin="0,5,0,0"
-                       Foreground="{StaticResource MutedTextBrush}"
-                       FontSize="12"
-                       Text="首次配置必须输入 Key；后续留空即可保留现有 Key。" />
-        </StackPanel>
+                <StackPanel Margin="0,18,0,0">
+                    <TextBlock FontWeight="SemiBold" Text="API Key" />
+                    <PasswordBox x:Name="ApiKeyPasswordBox"
+                                 Margin="0,6,0,0"
+                                 Height="34"
+                                 Padding="10,6"
+                                 ToolTip="留空会保留现有 API Key"
+                                 automation:AutomationProperties.Name="Micu API Key" />
+                    <TextBlock Margin="0,5,0,0"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               FontSize="12"
+                               Text="首次配置必须输入 Key；后续留空即可保留现有 Key。" />
+                </StackPanel>
 
-        <TextBlock x:Name="ValidationTextBlock"
-                   Grid.Row="6"
-                   Foreground="{StaticResource MutedTextBrush}"
-                   TextWrapping="Wrap"
-                   automation:AutomationProperties.LiveSetting="Polite" />
+                <TextBlock x:Name="ValidationTextBlock"
+                           Margin="0,10,0,0"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           TextWrapping="Wrap"
+                           automation:AutomationProperties.LiveSetting="Polite" />
+            </StackPanel>
+        </ScrollViewer>
 
-        <StackPanel Grid.Row="8" HorizontalAlignment="Right" Orientation="Horizontal">
-            <Button Margin="0,0,8,0"
+        <StackPanel Grid.Row="4" HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button x:Name="CancelButton"
+                    Margin="0,0,8,0"
                     Content="取消"
+                    IsCancel="True"
                     Style="{StaticResource QuietButtonStyle}"
+                    ToolTip="放弃本次未保存的修改"
                     Click="CancelButton_Click"
                     automation:AutomationProperties.Name="取消设置" />
-            <Button Content="保存并刷新"
+            <Button x:Name="SaveButton"
+                    Content="保存并刷新"
+                    IsDefault="True"
                     Style="{StaticResource PrimaryButtonStyle}"
+                    ToolTip="保存设置后立即查询余额"
                     Click="SaveButton_Click"
                     automation:AutomationProperties.Name="保存 Micu 设置并刷新余额" />
         </StackPanel>
