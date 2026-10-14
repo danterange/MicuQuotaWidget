@@ -224,13 +224,14 @@ function New-PublicAnnotatedTag {
         '-c', "user.email=$publicGitAuthorEmail",
         'tag', '--no-sign', '-a', $TagName, '-m', "Release $TagName")
 
-    $taggerRecord = (& git for-each-ref --format='%(taggername)%x1f%(taggeremail)' "refs/tags/$TagName").Trim()
+    # for-each-ref does not expand pretty-format %xNN escapes; use a delimiter absent from the fixed identity.
+    $taggerRecord = (& git for-each-ref --format='%(taggername)|%(taggeremail)' "refs/tags/$TagName").Trim()
 
     if ($LASTEXITCODE -ne 0) {
         throw "Unable to inspect release tag identity: exit code $LASTEXITCODE"
     }
 
-    $taggerFields = $taggerRecord.Split([char[]]@([char]0x1f))
+    $taggerFields = $taggerRecord -split '\|', 2
 
     if ($taggerFields.Count -ne 2 -or
         $taggerFields[0] -ne $publicGitAuthorName -or

@@ -26,6 +26,10 @@ foreach ($marker in @('Assert-NoSensitiveStagedContent', 'Assert-PublicGitHistor
     }
 }
 
+if ($deliveryContent.IndexOf("--format='%(taggername)|%(taggeremail)'", [System.StringComparison]::Ordinal) -lt 0) {
+    throw 'Release delivery script does not use a verifiable tagger identity format.'
+}
+
 if ($deliveryContent.IndexOf('$parsedReleaseList = $releaseListJson | ConvertFrom-Json', [System.StringComparison]::Ordinal) -lt 0 -or
     $deliveryContent.IndexOf('if ([bool]$parsedReleaseList)', [System.StringComparison]::Ordinal) -lt 0) {
     throw 'Release delivery script does not safely handle an empty GitHub Release list.'
