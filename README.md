@@ -1,11 +1,11 @@
-# MicuQuotaWidget
+﻿# MicuQuotaWidget
 
 > 一个简洁的 Windows WPF 桌面余额小组件：展示 Micu 余额、每 10 秒刷新，并可切换始终置顶。<br>
 > A compact Windows WPF desktop widget for Micu balance: refreshes every 10 seconds and supports always-on-top.
 
 ![MicuQuotaWidget 演示界面 / sample UI](docs/images/widget-preview.svg)
 
-<!-- VERSION: 0.1.0 -->
+<!-- VERSION: 0.1.1 -->
 
 ## 中文
 
