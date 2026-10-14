@@ -3,15 +3,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore"
         Title="MicuQuotaWidget"
-        Width="326"
-        Height="202"
-        MinWidth="300"
-        MinHeight="188"
-        MaxWidth="380"
-        MaxHeight="230"
+        Width="302"
+        Height="184"
+        MinWidth="286"
+        MinHeight="172"
+        MaxWidth="340"
+        MaxHeight="210"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
+        ShowInTaskbar="False"
         AllowsTransparency="False"
         Background="Transparent"
         Topmost="{Binding IsTopmost, Mode=TwoWay}">
@@ -23,31 +24,31 @@
     <Border Background="{StaticResource SurfaceBrush}"
             BorderBrush="{StaticResource BorderBrush}"
             BorderThickness="1"
-            CornerRadius="14"
+            CornerRadius="12"
             SnapsToDevicePixels="True">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="52" />
-                <RowDefinition Height="*" />
                 <RowDefinition Height="48" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="44" />
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0"
                     Background="{StaticResource HeaderBrush}"
                     BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="0,0,0,1"
-                    CornerRadius="14,14,0,0"
+                    CornerRadius="12,12,0,0"
                     MouseLeftButtonDown="Header_MouseLeftButtonDown">
-                <Grid Margin="16,0,10,0">
+                <Grid Margin="14,0,8,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="6" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
                     <TextBlock VerticalAlignment="Center"
-                               FontSize="16"
+                               FontSize="15"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource TextBrush}"
                                Text="Micu 余额" />
@@ -61,17 +62,18 @@
                                   ToolTip="Ctrl+T 切换窗口置顶"
                                   automation:AutomationProperties.Name="切换窗口置顶" />
 
-                    <Button Grid.Column="3"
-                            Width="30"
-                            Height="30"
+                    <Button x:Name="HideButton"
+                            Grid.Column="3"
+                            Width="28"
+                            Height="28"
                             VerticalAlignment="Center"
                             Background="Transparent"
                             BorderBrush="Transparent"
                             Click="CloseButton_Click"
                             Cursor="Hand"
                             FocusVisualStyle="{StaticResource AccessibleFocusVisual}"
-                            ToolTip="关闭小组件"
-                            automation:AutomationProperties.Name="关闭小组件">
+                            ToolTip="隐藏到通知区域"
+                            automation:AutomationProperties.Name="隐藏到通知区域">
                         <Path Width="12"
                               Height="12"
                               Data="M 1,1 L 11,11 M 11,1 L 1,11"
@@ -83,7 +85,7 @@
                 </Grid>
             </Border>
 
-            <Grid Grid.Row="1" Margin="20,16,20,10">
+            <Grid Grid.Row="1" Margin="16,12,16,8">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -96,14 +98,14 @@
                 <TextBlock Grid.Row="1"
                            Margin="0,3,0,4"
                            FontFamily="Cascadia Mono, Consolas"
-                           FontSize="30"
+                           FontSize="27"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource TextBrush}"
                            Text="{Binding BalanceText}"
                            TextTrimming="CharacterEllipsis" />
                 <StackPanel Grid.Row="2" Orientation="Horizontal">
                     <Ellipse Width="8" Height="8" Margin="0,3,7,0" Fill="{StaticResource AccentBrush}" />
-                    <TextBlock MaxWidth="252"
+                    <TextBlock MaxWidth="226"
                                Foreground="{StaticResource MutedTextBrush}"
                                FontSize="12"
                                Text="{Binding StatusText}"
@@ -115,11 +117,11 @@
             <Border Grid.Row="2"
                     BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="0,1,0,0">
-                <Grid Margin="16,0">
+                <Grid Margin="12,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="6" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 

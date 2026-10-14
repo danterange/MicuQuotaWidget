@@ -11,6 +11,7 @@
         SizeToContent="Height"
         ResizeMode="CanResize"
         WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
         Background="{StaticResource SurfaceBrush}">
     <Grid Margin="28,24" KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>

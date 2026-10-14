@@ -51,6 +51,7 @@ public sealed class SettingsWindowUiTests
                 Assert.NotNull(validationText);
                 Assert.Equal(SizeToContent.Height, window.SizeToContent);
                 Assert.Equal(ResizeMode.CanResize, window.ResizeMode);
+                Assert.False(window.ShowInTaskbar);
                 Assert.Equal(ScrollBarVisibility.Auto, formScroller.VerticalScrollBarVisibility);
                 Assert.Equal(ScrollBarVisibility.Disabled, formScroller.HorizontalScrollBarVisibility);
                 Assert.True(cancelButton!.IsCancel);

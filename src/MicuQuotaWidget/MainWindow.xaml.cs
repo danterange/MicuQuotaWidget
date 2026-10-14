@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.ComponentModel;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -15,6 +16,8 @@ public partial class MainWindow : Window
     private readonly IApiKeyStore _apiKeyStore;
     private readonly IWidgetSettingsStore _settingsStore;
     private readonly MainWindowViewModel _viewModel;
+    private bool _isApplicationExitRequested;
+    private SettingsWindow? _settingsWindow;
 
     /// <summary>
     /// Creates the main window with explicitly injected local services so UI tests can avoid real credentials and networking.
@@ -31,6 +34,7 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
 
         Loaded += MainWindow_Loaded;
+        Closing += MainWindow_Closing;
         Closed += MainWindow_Closed;
     }
 
@@ -58,16 +62,130 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Opens the configuration dialog without placing API-key handling in the main balance surface.
+    /// 将普通关闭请求转换为隐藏到通知区域；只有应用的显式退出路径才能释放轮询和窗口资源。
+    /// </summary>
+    private void MainWindow_Closing(object? sender, CancelEventArgs e)
+    {
+        if (_isApplicationExitRequested)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        HideToTray();
+    }
+
+    /// <summary>
+    /// 由托盘菜单或双击图标切换浮窗，恢复时确保窗口回到正常状态并获得键盘焦点。
+    /// </summary>
+    public void ToggleVisibilityFromTray()
+    {
+        if (_isApplicationExitRequested)
+        {
+            return;
+        }
+
+        if (IsVisible)
+        {
+            HideToTray();
+            return;
+        }
+
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+    }
+
+    /// <summary>
+    /// 由托盘菜单复用刷新命令，保留 ViewModel 对重复刷新和异常反馈的统一处理。
+    /// </summary>
+    public void RefreshFromTray()
+    {
+        if (!_isApplicationExitRequested && _viewModel.RefreshCommand.CanExecute(null))
+        {
+            _viewModel.RefreshCommand.Execute(null);
+        }
+    }
+
+    /// <summary>
+    /// 由托盘菜单复用既有置顶命令，避免维护与 ToggleButton 脱节的第二份状态。
+    /// </summary>
+    public void ToggleTopmostFromTray()
+    {
+        if (!_isApplicationExitRequested && _viewModel.ToggleTopmostCommand.CanExecute(null))
+        {
+            _viewModel.ToggleTopmostCommand.Execute(null);
+        }
+    }
+
+    /// <summary>
+    /// 从托盘进入设置前恢复主窗口，并复用单一设置对话框以防止嵌套模态窗口。
+    /// </summary>
+    public void OpenSettingsFromTray()
+    {
+        if (_isApplicationExitRequested)
+        {
+            return;
+        }
+
+        if (!IsVisible)
+        {
+            Show();
+            WindowState = WindowState.Normal;
+        }
+
+        Activate();
+        OpenSettings();
+    }
+
+    /// <summary>
+    /// 标记受控退出后关闭窗口，使 Closing 处理器不再将退出请求改写为隐藏动作。
+    /// </summary>
+    public void CloseForApplicationExit()
+    {
+        if (_isApplicationExitRequested)
+        {
+            return;
+        }
+
+        _isApplicationExitRequested = true;
+        Close();
+    }
+
+    /// <summary>
+    /// 从可见设置按钮打开配置对话框，不让 API Key 处理进入主余额卡片。
     /// </summary>
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
+        OpenSettings();
+    }
+
+    /// <summary>
+    /// 在主窗口拥有者下只显示一个设置对话框，使托盘和卡片入口共享同一模态与凭据边界。
+    /// </summary>
+    private void OpenSettings()
+    {
+        if (_settingsWindow is { IsVisible: true })
+        {
+            _settingsWindow.Activate();
+            return;
+        }
+
         var window = new SettingsWindow(_settingsStore, _apiKeyStore, _viewModel)
         {
             Owner = this
         };
 
-        window.ShowDialog();
+        _settingsWindow = window;
+
+        try
+        {
+            window.ShowDialog();
+        }
+        finally
+        {
+            _settingsWindow = null;
+        }
     }
 
     /// <summary>
@@ -84,11 +202,22 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Closes the widget through its visible custom title-bar control.
+    /// 将可见的关闭图标变为隐藏到通知区域，避免用户误以为关闭浮窗会终止托盘服务。
     /// </summary>
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
-        Close();
+        HideToTray();
+    }
+
+    /// <summary>
+    /// 隐藏当前浮窗但保留 Application、轮询和通知区域入口，使余额服务继续驻留后台。
+    /// </summary>
+    private void HideToTray()
+    {
+        if (IsVisible)
+        {
+            Hide();
+        }
     }
 
     /// <summary>
@@ -101,7 +230,7 @@ public partial class MainWindow : Window
             if (element is System.Windows.Controls.Primitives.ButtonBase
                 or System.Windows.Controls.Primitives.TextBoxBase
                 or PasswordBox
-                or ComboBox)
+                or System.Windows.Controls.ComboBox)
             {
                 return true;
             }
