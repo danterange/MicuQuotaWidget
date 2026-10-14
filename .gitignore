@@ -11,8 +11,19 @@ artifacts/
 
 # Local secrets and diagnostics
 .env
+.env.*
 *.local.json
+local.settings.json
 *.secrets.json
+secrets.json
+credentials.json
+config.secret.json
+secrets/
+*.pfx
+*.p12
+*.pem
+*.key
+*.snk
 *.log
 
 # Generated publish output

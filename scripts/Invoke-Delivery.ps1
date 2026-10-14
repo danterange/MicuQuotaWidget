@@ -15,6 +15,8 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$publicGitAuthorName = 'MicuQuotaWidget contributors'
+$publicGitAuthorEmail = 'noreply@users.noreply.github.com'
 
 function Invoke-NativeCommand {
     param(
@@ -111,6 +113,132 @@ function Assert-OnlyExpectedPathsAreStaged {
     }
 }
 
+# Reads origin without printing it and accepts only credential-free GitHub URLs.
+function Get-SafeGitHubOrigin {
+    $originUrl = (& git remote get-url origin).Trim()
+
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($originUrl)) {
+        throw 'Push requires a configured origin remote.'
+    }
+
+    $originMatch = [System.Text.RegularExpressions.Regex]::Match(
+        $originUrl,
+        '^(?:https://github\.com/|git@github\.com:)(?<owner>[A-Za-z0-9][A-Za-z0-9_.-]*)/(?<repository>[A-Za-z0-9][A-Za-z0-9_.-]*?)(?:\.git)?$')
+
+    if (-not $originMatch.Success) {
+        throw 'Origin must be a credential-free GitHub HTTPS or SSH URL.'
+    }
+
+    return [pscustomobject]@{
+        NameWithOwner = "$($originMatch.Groups['owner'].Value)/$($originMatch.Groups['repository'].Value)"
+    }
+}
+
+# Rejects public history whose author or committer metadata is not the project noreply identity.
+function Assert-PublicGitHistory {
+    $identityRecords = @(& git log --format='%an%x1f%ae%x1f%cn%x1f%ce' HEAD)
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to inspect public commit identities: exit code $LASTEXITCODE"
+    }
+
+    $unsafeCommitCount = 0
+
+    foreach ($identityRecord in $identityRecords) {
+        $fields = $identityRecord.Split([char[]]@([char]0x1f))
+
+        if ($fields.Count -ne 4 -or
+            $fields[0] -ne $publicGitAuthorName -or
+            $fields[1] -ne $publicGitAuthorEmail -or
+            $fields[2] -ne $publicGitAuthorName -or
+            $fields[3] -ne $publicGitAuthorEmail) {
+            $unsafeCommitCount++
+        }
+    }
+
+    if ($unsafeCommitCount -gt 0) {
+        throw "Public history identity guard rejected $unsafeCommitCount commit(s) without the project noreply identity."
+    }
+}
+
+# Scans staged additions and modifications without echoing matched content or credentials.
+function Assert-NoSensitiveStagedContent {
+    $stagedPaths = @(& git -c core.quotePath=false diff --cached --diff-filter=ACMR --name-only)
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to inspect staged content: exit code $LASTEXITCODE"
+    }
+
+    $sensitivePathPattern = '(?i)(^|/)(\.env(?:\.|$)|.*(?:secret|credential|password|token).*(?:\.json|\.config|\.xml|\.ini|\.txt)$|.*\.(?:pfx|p12|pem|key|snk)$)'
+    $sensitivePatterns = [ordered]@{
+        'PEM private key' = '-----BEGIN(?: [A-Z]+)* PRIVATE KEY-----'
+        'GitHub token' = '\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b'
+        'OpenAI-style API key' = '\bsk-[A-Za-z0-9_-]{20,}\b'
+        'AWS access key' = '\b(?:AKIA|ASIA)[A-Z0-9]{16}\b'
+        'Bearer credential' = '(?i)\bAuthorization\s*[:=]\s*Bearer\s+[A-Za-z0-9._~+/-]{20,}'
+        'credential literal' = '(?im)(?:["'']?(?:api[-_]?key|access[-_]?token|password|client[-_]?secret|secret)[A-Za-z0-9_-]*["'']?\s*[:=]\s*["''][^"''\r\n]{12,}["''])'
+        'non-whitelisted email address' = '(?i)\b[A-Z0-9._%+-]+@(?!users\.noreply\.github\.com\b|example\.com\b|invalid\b)[A-Z0-9.-]+\.[A-Z]{2,}\b'
+        'local Windows user path' = '(?i)[A-Z]:\\Users\\'
+    }
+    $violations = New-Object System.Collections.Generic.List[string]
+
+    foreach ($stagedPath in $stagedPaths) {
+        if ($stagedPath -match $sensitivePathPattern) {
+            $violations.Add("$stagedPath [sensitive file name]")
+            continue
+        }
+
+        $stagedContentLines = @(& git show ":$stagedPath")
+        $showExitCode = $LASTEXITCODE
+
+        if ($showExitCode -ne 0) {
+            throw "Unable to inspect staged file ${stagedPath}: exit code $showExitCode"
+        }
+
+        $stagedContent = $stagedContentLines -join "`n"
+
+        foreach ($patternName in $sensitivePatterns.Keys) {
+            $match = [System.Text.RegularExpressions.Regex]::Match($stagedContent, $sensitivePatterns[$patternName])
+
+            if ($match.Success) {
+                $lineNumber = 1 + [System.Text.RegularExpressions.Regex]::Matches($stagedContent.Substring(0, $match.Index), "`n").Count
+                $violations.Add("${stagedPath}:$lineNumber [$patternName]")
+            }
+        }
+    }
+
+    if ($violations.Count -gt 0) {
+        throw "Sensitive staged content guard rejected $($violations.Count) finding(s): $($violations -join '; ')"
+    }
+}
+
+# Creates an annotated tag whose tagger metadata cannot inherit a personal Git identity.
+function New-PublicAnnotatedTag {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TagName
+    )
+
+    Invoke-NativeCommand -FilePath 'git' -Arguments @(
+        '-c', "user.name=$publicGitAuthorName",
+        '-c', "user.email=$publicGitAuthorEmail",
+        'tag', '--no-sign', '-a', $TagName, '-m', "Release $TagName")
+
+    $taggerRecord = (& git for-each-ref --format='%(taggername)%x1f%(taggeremail)' "refs/tags/$TagName").Trim()
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to inspect release tag identity: exit code $LASTEXITCODE"
+    }
+
+    $taggerFields = $taggerRecord.Split([char[]]@([char]0x1f))
+
+    if ($taggerFields.Count -ne 2 -or
+        $taggerFields[0] -ne $publicGitAuthorName -or
+        $taggerFields[1] -ne "<$publicGitAuthorEmail>") {
+        throw 'Release tag identity guard rejected a non-noreply tagger.'
+    }
+}
+
 function Commit-ExactPaths {
     param(
         [Parameter(Mandatory = $true)]
@@ -125,6 +253,7 @@ function Commit-ExactPaths {
     Invoke-NativeCommand -FilePath 'git' -Arguments $addArguments
     Assert-OnlyExpectedPathsAreStaged -AllowedPaths $RelativePaths
     Invoke-NativeCommand -FilePath 'git' -Arguments @('diff', '--cached', '--check')
+    Assert-NoSensitiveStagedContent
 
     & git diff --cached --quiet
 
@@ -136,7 +265,10 @@ function Commit-ExactPaths {
         throw "Unable to inspect staged diff: exit code $LASTEXITCODE"
     }
 
-    Invoke-NativeCommand -FilePath 'git' -Arguments @('commit', '-m', $CommitMessage)
+    Invoke-NativeCommand -FilePath 'git' -Arguments @(
+        '-c', "user.name=$publicGitAuthorName",
+        '-c', "user.email=$publicGitAuthorEmail",
+        'commit', '--no-gpg-sign', '-m', $CommitMessage)
     return $true
 }
 
@@ -294,42 +426,58 @@ function Assert-ReleasePreflight {
         throw 'Release preflight refuses a detached or unknown Git branch.'
     }
 
-    $originUrl = (& git remote get-url origin).Trim()
-
-    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($originUrl)) {
-        throw 'Release preflight requires a configured origin remote.'
-    }
-
-    if ($originUrl -notmatch 'github\.com[:/](?<owner>[^/ :]+)/(?:[^/ ]+?)(?:\.git)?$') {
-        throw 'Release preflight requires an origin URL that targets GitHub.'
-    }
+    $origin = Get-SafeGitHubOrigin
+    Assert-PublicGitHistory
 
     Invoke-NativeCommand -FilePath 'git' -Arguments @('fetch', 'origin', '--tags', '--prune')
-    Invoke-NativeCommand -FilePath 'gh' -Arguments @('auth', 'status')
-    $repoJson = & gh repo view --json nameWithOwner
+    $authStatus = & gh auth status 2>$null
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to verify GitHub CLI authentication: exit code $LASTEXITCODE"
+    }
+
+    $repoJson = & gh repo view $origin.NameWithOwner --json nameWithOwner
 
     if ($LASTEXITCODE -ne 0) {
         throw "Unable to read the GitHub repository associated with origin: exit code $LASTEXITCODE"
     }
 
     $repo = $repoJson | ConvertFrom-Json
-    $originRepository = [System.Text.RegularExpressions.Regex]::Match($originUrl, 'github\.com[:/](?<owner>[^/ :]+)/(?<repo>[^/ ]+?)(?:\.git)?$')
-    $originNameWithOwner = "$($originRepository.Groups['owner'].Value)/$($originRepository.Groups['repo'].Value)"
 
-    if ($repo.nameWithOwner -ne $originNameWithOwner) {
-        throw "GitHub CLI repository $($repo.nameWithOwner) does not match origin $originNameWithOwner."
+    if ($repo.nameWithOwner -ne $origin.NameWithOwner) {
+        throw 'GitHub CLI repository does not match the credential-free origin remote.'
     }
 
     $tagName = "v$Version"
-    & git rev-parse -q --verify "refs/tags/$tagName"
+    $previousErrorActionPreference = $ErrorActionPreference
 
-    if ($LASTEXITCODE -eq 0) {
+    try {
+        $ErrorActionPreference = 'Continue'
+        $existingTag = & git rev-parse -q --verify "refs/tags/$tagName" 2>$null
+        $tagLookupExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+
+    if ($tagLookupExitCode -eq 0) {
         throw "Release tag already exists: $tagName"
     }
 
-    $existingRelease = & gh release view $tagName --json tagName 2>$null
+    if ($tagLookupExitCode -ne 1) {
+        throw "Unable to inspect release tag ${tagName}: exit code $tagLookupExitCode"
+    }
 
-    if ($LASTEXITCODE -eq 0) {
+    # A successful list query distinguishes a truly absent release from auth or API failures.
+    $releaseListJson = & gh release list --repo $origin.NameWithOwner --limit 100 --json tagName
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to list GitHub Releases: exit code $LASTEXITCODE"
+    }
+
+    $existingReleases = @($releaseListJson | ConvertFrom-Json)
+
+    if (@($existingReleases | Where-Object { $_.tagName -eq $tagName }).Count -gt 0) {
         throw "GitHub Release already exists: $tagName"
     }
 
@@ -461,7 +609,8 @@ try {
 
     if (-not $Release) {
         if ($Push) {
-            Invoke-NativeCommand -FilePath 'git' -Arguments @('remote', 'get-url', 'origin')
+            [void](Get-SafeGitHubOrigin)
+            Assert-PublicGitHistory
             Invoke-NativeCommand -FilePath 'git' -Arguments @('push', 'origin', 'HEAD')
         }
 
@@ -483,8 +632,9 @@ try {
     }
 
     [void](Commit-ExactPaths -RelativePaths $versionPaths -CommitMessage "chore(release): v$nextVersion")
+    Assert-PublicGitHistory
     Invoke-NativeCommand -FilePath 'git' -Arguments @('push', 'origin', 'HEAD')
-    Invoke-NativeCommand -FilePath 'git' -Arguments @('tag', '-a', $releasePlan.TagName, '-m', "Release $releasePlan.TagName")
+    New-PublicAnnotatedTag -TagName $releasePlan.TagName
     Invoke-NativeCommand -FilePath 'git' -Arguments @('push', 'origin', $releasePlan.TagName)
     $commitSha = (& git rev-parse 'HEAD').Trim()
     $workflowRun = Wait-ForReleaseWorkflow -CommitSha $commitSha

@@ -28,8 +28,9 @@ $coreTests = Join-Path -Path $projectRoot -ChildPath 'tests\MicuQuotaWidget.Core
 $uiTests = Join-Path -Path $projectRoot -ChildPath 'tests\MicuQuotaWidget.UiTests\MicuQuotaWidget.UiTests.csproj'
 $appProject = Join-Path -Path $projectRoot -ChildPath 'src\MicuQuotaWidget\MicuQuotaWidget.csproj'
 $publishDirectory = Join-Path -Path $projectRoot -ChildPath 'artifacts\publish-smoke'
+$releaseSecurityTests = Join-Path -Path $PSScriptRoot -ChildPath 'Test-ReleaseSecurity.ps1'
 
-foreach ($path in @($solutionPath, $coreTests, $uiTests, $appProject)) {
+foreach ($path in @($solutionPath, $coreTests, $uiTests, $appProject, $releaseSecurityTests)) {
     if (-not (Test-Path -LiteralPath $path)) {
         throw "Required project file not found: $path"
     }
@@ -40,6 +41,13 @@ Push-Location $projectRoot
 try {
     if (Test-Path -LiteralPath (Join-Path -Path $projectRoot -ChildPath '.git')) {
         Invoke-NativeCommand -FilePath 'git' -Arguments @('diff', '--check')
+    }
+
+    # Keep public-release safeguards executable instead of relying only on workflow review.
+    & $releaseSecurityTests
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Release security test script failed with exit code $LASTEXITCODE"
     }
 
     Invoke-NativeCommand -FilePath 'dotnet' -Arguments @('restore', $solutionPath)

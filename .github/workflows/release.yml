@@ -11,12 +11,16 @@ permissions:
 jobs:
   build-test-release:
     runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
     steps:
       - name: Checkout tagged source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Install .NET 8 SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: '8.0.x'
 
@@ -40,6 +44,16 @@ jobs:
               throw "PowerShell parser rejected $($_.FullName)"
             }
           }
+          & .\scripts\Test-ReleaseSecurity.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Validate release tag
+        shell: pwsh
+        run: |
+          $tag = $env:RELEASE_TAG
+          if ([string]::IsNullOrWhiteSpace($tag) -or $tag -notmatch '^v(?<version>(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$') {
+            throw 'Release tag must use vMAJOR.MINOR.PATCH without shell-significant characters.'
+          }
 
       - name: Build and run tests
         shell: pwsh
@@ -54,8 +68,11 @@ jobs:
       - name: Publish Windows archive and hash manifest
         shell: pwsh
         run: |
-          $tag = '${{ github.ref_name }}'
-          $version = $tag.Substring(1)
+          $tag = $env:RELEASE_TAG
+          if ([string]::IsNullOrWhiteSpace($tag) -or $tag -notmatch '^v(?<version>(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$') {
+            throw 'Release tag validation failed before publishing the archive.'
+          }
+          $version = $Matches['version']
           $publishDirectory = Join-Path $PWD "artifacts\release\$tag\publish"
           $assetDirectory = Join-Path $PWD "artifacts\release\$tag\assets"
           $zipName = "MicuQuotaWidget-v$version-windows-x64.zip"
@@ -72,8 +89,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = '${{ github.ref_name }}'
-          $version = $tag.Substring(1)
+          $tag = $env:RELEASE_TAG
+          if ([string]::IsNullOrWhiteSpace($tag) -or $tag -notmatch '^v(?<version>(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$') {
+            throw 'Release tag validation failed before creating the GitHub Release.'
+          }
+          $version = $Matches['version']
           $assetDirectory = Join-Path $PWD "artifacts\release\$tag\assets"
           gh release create $tag `
             (Join-Path $assetDirectory "MicuQuotaWidget-v$version-windows-x64.zip") `

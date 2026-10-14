@@ -16,6 +16,8 @@
 - 默认每 10 秒刷新一次；刷新请求不会重叠，失败时保留最近一次成功余额。
 - “置顶”按钮可随时开启或关闭 `Topmost`；`Ctrl+R` 立即刷新，`Ctrl+T` 切换置顶。
 - API Key 只写入 Windows Credential Manager 的当前用户凭据，不进入项目文件、日志或截图。
+- 发布前会检查 Git 暂存内容；`.gitignore` 额外隔离 `.env.*`、本地设置、常见凭据 JSON 与私钥/证书文件。忽略规则不是提交前审查的替代品。
+- 公开提交和 Release tag 由发布脚本强制使用项目通用 noreply Git 身份；脚本会拒绝含个人身份元数据的历史。
 
 ### 重要说明
 
@@ -42,6 +44,8 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke
 - Refreshes every 10 seconds by default. Requests never overlap, and the last successful value remains visible after a failure.
 - Toggle `Topmost` at any time. `Ctrl+R` refreshes immediately; `Ctrl+T` toggles always-on-top.
 - The API key is stored only in the current user's Windows Credential Manager entry, never in project files, logs, or screenshots.
+- Release preflight checks the staged Git content. `.gitignore` also isolates `.env.*`, local settings, common credential JSON files, and private-key/certificate files; ignore rules never replace a pre-commit review.
+- Public commits and release tags use a project-wide generic noreply Git identity enforced by the delivery script, which rejects history containing personal Git metadata.
 
 ### Important notes
 
